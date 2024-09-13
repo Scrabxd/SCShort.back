@@ -1,12 +1,12 @@
 package db
 
 import (
-	"ScrabShortener/cache"
 	"ScrabShortener/helpers"
 	"context"
 	"fmt"
 	"log"
 
+	"github.com/redis/go-redis/v9"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -14,9 +14,12 @@ import (
 
 var ctx = context.Background()
 
-func Connect() *mongo.Client {
+var rdb = RbdConn()
 
-	MONGO_URI := helpers.GetEnv("MONGO_URI")
+var Address = helpers.GetEnv("REDIS_URI")
+var MONGO_URI = helpers.GetEnv("MONGO_URI")
+
+func Connect() *mongo.Client {
 
 	clientOptions := options.Client().ApplyURI(MONGO_URI)
 	client, err := mongo.Connect(context.Background(), clientOptions)
@@ -25,6 +28,17 @@ func Connect() *mongo.Client {
 	}
 
 	return client
+}
+
+func RbdConn() *redis.Client {
+
+	opt, err := redis.ParseURL(Address)
+	if err != nil {
+		log.Fatal("No Connection to redis Stablished.")
+	}
+	rdb := redis.NewClient(opt)
+
+	return rdb
 }
 
 func TestDb() {
@@ -40,9 +54,9 @@ func TestDb() {
 	if err := client.Database("admin").RunCommand(context.TODO(), bson.D{{"ping", 1}}).Err(); err != nil {
 		panic(err)
 	}
+
 	fmt.Println("Ping to your MongoDB Database. Connection established.")
 
-	rdb := cache.RedisConnection()
 	_, err = rdb.Ping(ctx).Result()
 	if err != nil {
 		log.Fatal(err)

@@ -1,6 +1,7 @@
 package server
 
 import (
+	update "ScrabShortener/Update"
 	"ScrabShortener/controllers"
 	"ScrabShortener/db"
 	"ScrabShortener/helpers"
@@ -8,6 +9,7 @@ import (
 	"log"
 
 	"github.com/gofiber/fiber/v3"
+	"github.com/gofiber/fiber/v3/middleware/cors"
 )
 
 func Server() {
@@ -24,13 +26,20 @@ func Server() {
 		port = "5000"
 	}
 
-	go helpers.TickerFunc()
+	go update.TickerFunc()
 
+	//Middleware
 	db.TestDb()
-
-	app.Post("/PostShortUrl", controllers.PostUrlShort)
-	app.Get("/GetShortUrls", controllers.GetShortUrls)
-	app.Get("/:shortUrl", controllers.RedirectUrl)
+	app.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"http://SCShort.dev", "http://localhost:5173"},
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"*"},
+		AllowCredentials: true,
+	}))
+	//Routes
+	app.Post("/PostShortUrl", controllers.PostUrlShort) //Creation of URLS
+	app.Get("/GetShortUrls", controllers.GetShortUrls)  // Getting the URLS from the db
+	app.Get("/:shortUrl", controllers.RedirectUrl)      // Redirect to original links
 
 	log.Fatal(app.Listen(":" + port))
 

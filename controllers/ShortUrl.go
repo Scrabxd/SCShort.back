@@ -1,8 +1,8 @@
 package controllers
 
 import (
-	"ScrabShortener/cache"
 	"ScrabShortener/db"
+	"ScrabShortener/helpers"
 	"context"
 	"log"
 	"strings"
@@ -19,10 +19,13 @@ type UrlInfo struct {
 	ClickAmmount int64
 }
 
+var Address = helpers.GetEnv("REDIS_URI")
+var REDIS_PASS = helpers.GetEnv("REDIS_PASS")
+
 var collection = db.ConnectionString()
 var ctx = context.Background()
-var threshold = 5
-var rdb = cache.RedisConnection()
+var threshold = 1000
+var rdb = db.RbdConn()
 
 // Client declaration, it  calls  db.Connect that is a connection to the mongodb db
 
@@ -32,6 +35,14 @@ func PostUrlShort(c fiber.Ctx) error {
 
 	id := xid.New().String()
 	shortedUrl := strings.Replace(id[:9], "-", "", -1)
+
+	if !helpers.IsValidUrl(c.FormValue("FullUrl")) {
+		data = map[string]interface{}{
+			"Message": "Url's format is incorrect",
+			"Status":  500,
+		}
+		return c.Status(500).JSON(data)
+	}
 
 	register := UrlInfo{
 		FullUrl:      c.FormValue("FullUrl"),
@@ -74,13 +85,12 @@ func PostUrlShort(c fiber.Ctx) error {
 		"document_id": insertResult.InsertedID, // Get the ID of the inserted document
 		"Status":      200,
 	}
-
 	return c.Status(200).JSON(data)
 }
 
 func GetShortUrls(c fiber.Ctx) error {
 
-	data := make(map[string]interface{})
+	var data = make(map[string]interface{})
 
 	filter := bson.M{}
 
@@ -119,12 +129,8 @@ func GetShortUrls(c fiber.Ctx) error {
 func RedirectUrl(c fiber.Ctx) error {
 
 	shortedUrl := c.Params("shortUrl")
-	filter := bson.M{
-		"shorturl": shortedUrl,
-	}
 
-	rdb := cache.RedisConnection()
-
+	filter := bson.M{"shorturl": shortedUrl}
 	var urlInfo UrlInfo
 
 	if err := collection.FindOne(ctx, filter).Decode(&urlInfo); err != nil {
@@ -153,14 +159,14 @@ func RedirectUrl(c fiber.Ctx) error {
 		log.Fatal("Error updating in redis")
 	}
 
-	if urlInfo.ClickAmmount > int64(threshold) {
+	if int(urlInfo.ClickAmmount) > threshold {
 		cachedResponse, err := rdb.HGet(ctx, urlInfo.ShortUrl, "full_url").Result()
-		if err == nil {
-			return c.Redirect().To(cachedResponse)
+		if err != nil {
+			log.Fatal("Error redirectioning with redis")
 		}
+		return c.Redirect().To(cachedResponse)
 	}
 
-	var url string = urlInfo.FullUrl
-	return c.Redirect().To(url)
+	return c.Redirect().To(urlInfo.FullUrl)
 
 }
