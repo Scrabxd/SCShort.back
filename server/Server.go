@@ -31,7 +31,7 @@ func Server() {
 	//Middleware
 	db.TestDb()
 	app.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://SCShort.dev", "http://localhost:5173"},
+		AllowOrigins:     []string{"http://SCShort.dev", "http://localhost:5173", "https://sc-short-dev-htq1.vercel.app/"},
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"*"},
 		AllowCredentials: true,
