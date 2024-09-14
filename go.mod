@@ -1,6 +1,6 @@
 module ScrabShortener
 
-go 1.20
+go 1.23.0
 
 require (
 	github.com/gofiber/fiber/v3 v3.0.0-beta.3
