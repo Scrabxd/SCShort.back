@@ -4,6 +4,8 @@
 ![SCSHORT)](https://github.com/user-attachments/assets/98f57918-176c-4e5f-ad32-7e1c2c88cee7)
 Image created with AI Microsoft Design
 
+https://sc-short-dev-htq1.vercel.app/
+
 SCShort is a url shortner inspired by *TinyUrl*, it uses ___Fiber___ and ***GoLang*** as a backend, as well as ***MongoDB*** and ***Redis*** for database solutions
 
 ## Tech Stack For the backend:
